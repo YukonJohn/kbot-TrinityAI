@@ -8,13 +8,13 @@ from streamlit_gsheets import GSheetsConnection
 # ====================== CONFIG & SECURITY ======================
 st.set_page_config(page_title="TrinityAI Master Controller", layout="wide")
 
-# PASSWORD PROTECTION (Case Sensitive)
+# PASSWORD PROTECTION
 password_guess = st.sidebar.text_input("Unlock TrinityAI:", type="password")
 if password_guess != "Trinity":
     st.info("Enter password (Trinity) in sidebar to begin.")
     st.stop()
 
-# --- SECURE CREDENTIALS (Reading from secrets.toml) ---
+# --- SECURE CREDENTIALS ---
 try:
     MY_API_KEY = st.secrets["GOOGLE_API_KEY"]
     MY_SPREADSHEET = st.secrets["spreadsheet"]
@@ -31,7 +31,6 @@ conn = st.connection("gsheets", type=GSheetsConnection)
 # ====================== AI & SCORING LOGIC ======================
 def get_stock_description(ticker):
     try:
-        # Better prompt that works for stocks, metals, and futures
         prompt = (f"Act as a professional commodities and stock market analyst in 2026. "
                   f"Give a deep, strategic analysis of the ticker {ticker}. "
                   f"Explain what it is (stock, metal, futures, etc.), current market conditions, "
@@ -64,7 +63,8 @@ def get_kbot_score(ticker):
 # ====================== INTERFACE ======================
 st.title("🤖 Kbot: TrinityAI Master Controller")
 
-tabs = st.tabs(["📊 Analyzer", "🚀 Trends", "🌍 Global Pulse", "⛏️ Mining Scanner", "📁 My Portfolio", "🏆 Top 10"])
+tabs = st.tabs(["📊 Analyzer", "🚀 Trends", "🌍 Global Pulse", "⛏️ Mining Scanner", 
+                "📁 My Portfolio", "🏆 Top 10", "📈 ETF Explorer"])
 
 # --- TAB 1: ANALYZER ---
 with tabs[0]:
@@ -77,8 +77,6 @@ with tabs[0]:
             st.subheader(f"Strategic Analysis: {ticker}")
             with st.spinner(f"Requesting deep briefing for {ticker}..."):
                 st.info(get_stock_description(ticker))
-            
-            # Small delay to help with yfinance rate limits
             time.sleep(1.5)
             data = yf.Ticker(ticker).history(period="6mo")
             if not data.empty:
@@ -94,7 +92,7 @@ with tabs[1]:
         watch = {"S&P 500": "^GSPC", "Gold": "GC=F", "Silver": "SI=F", "Bitcoin": "BTC-USD"}
         cols = st.columns(4)
         for i, (name, sym) in enumerate(watch.items()):
-            time.sleep(1)  # Small delay to reduce rate limit risk
+            time.sleep(1)
             p = yf.Ticker(sym).history(period="1d")['Close'].iloc[-1]
             cols[i].metric(name, f"${p:,.2f}")
         
@@ -127,7 +125,7 @@ with tabs[3]:
         results = [get_kbot_score(m) for m in miners]
         st.table(pd.DataFrame([r for r in results if r]))
 
-# --- TAB 5: MY PORTFOLIO (WITH DELETE) ---
+# --- TAB 5: MY PORTFOLIO ---
 with tabs[4]:
     st.header("📁 TrinityAI Portfolio Command")
     
@@ -181,11 +179,44 @@ with tabs[4]:
     else:
         st.info("Your portfolio ledger is currently empty.")
 
-# --- TAB 6: TOP 10 ---
+# --- TAB 6: TOP 10 (US + Canadian) ---
 with tabs[5]:
     st.header("🏆 Momentum Leaderboard")
+    
     if st.button("Run Global Scan"):
-        scantest = ["AAPL", "NVDA", "TSLA", "AMD", "SI=F", "GC=F", "MSFT", "GOOGL", "AMZN", "META"]
-        results = [get_kbot_score(t) for t in scantest]
-        final_df = pd.DataFrame([r for r in results if r]).sort_values("Score", ascending=False)
-        st.table(final_df)
+        # US Stocks
+        us_stocks = ["AAPL", "NVDA", "TSLA", "AMD", "MSFT", "GOOGL", "AMZN", "META", "AVGO", "COST"]
+        st.subheader("🇺🇸 Top 10 US Stocks")
+        us_results = [get_kbot_score(t) for t in us_stocks]
+        us_df = pd.DataFrame([r for r in us_results if r]).sort_values("Score", ascending=False)
+        st.table(us_df)
+
+        st.divider()
+        
+        # Canadian Stocks (TSX)
+        canadian_stocks = ["SHOP", "RY", "CNQ", "SU", "ENB", "CP", "BN", "ATD", "FTS", "GOLD"]
+        st.subheader("🇨🇦 Top 10 Canadian Stocks")
+        ca_results = [get_kbot_score(t) for t in canadian_stocks]
+        ca_df = pd.DataFrame([r for r in ca_results if r]).sort_values("Score", ascending=False)
+        st.table(ca_df)
+
+# --- NEW TAB 7: ETF EXPLORER ---
+with tabs[6]:
+    st.header("📈 ETF Explorer")
+    st.write("Momentum scan for popular US and Canadian ETFs")
+    
+    if st.button("Scan ETFs"):
+        etfs = ["SPY", "QQQ", "VOO", "VTI", "VEA", "VXUS", "XIU.TO", "XIC.TO", "XSP.TO", "XEI.TO", "ZWB.TO", "XQQ.TO"]
+        
+        results = []
+        for etf in etfs:
+            time.sleep(1.2)   # Help prevent rate limits
+            score = get_kbot_score(etf)
+            if score:
+                results.append(score)
+        
+        if results:
+            etf_df = pd.DataFrame(results).sort_values("Score", ascending=False)
+            st.table(etf_df)
+        else:
+            st.info("No valid data returned. Try again in a few minutes.")
