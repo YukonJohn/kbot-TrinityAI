@@ -31,13 +31,13 @@ conn = st.connection("gsheets", type=GSheetsConnection)
 # ====================== AI & SCORING LOGIC ======================
 def get_stock_description(ticker):
     try:
-        # Beefed up prompt for deeper, professional analysis
-        prompt = (f"Provide a deep-dive strategic analysis of {ticker}. "
-                  f"Detail its core business model, primary competitors, recent financial "
-                  f"performance, and its current outlook in the 2026 market. "
-                  f"Provide 5-6 substantial sentences.")
+        # Better prompt that works for stocks, metals, and futures
+        prompt = (f"Act as a professional commodities and stock market analyst in 2026. "
+                  f"Give a deep, strategic analysis of the ticker {ticker}. "
+                  f"Explain what it is (stock, metal, futures, etc.), current market conditions, "
+                  f"key drivers, recent performance, and outlook for the rest of 2026. "
+                  f"Keep it professional and useful for a trader. Use 5-6 clear sentences.")
         
-        # Using the stable 1.5-flash model
         response = client.models.generate_content(model="models/gemini-2.5-flash", contents=prompt)
         return response.text
     except Exception as e:
