@@ -38,7 +38,7 @@ def get_stock_description(ticker):
                   f"key drivers, recent performance, and outlook for the rest of 2026. "
                   f"Keep it professional and useful for a trader. Use 5-6 clear sentences.")
         
-        response = client.models.generate_content(model="models/gemini-2.5-flash", contents=prompt)
+        response = client.models.generate_content(model="gemini-2.5-flash", contents=prompt)
         return response.text
     except Exception as e:
         return f"TrinityAI SYSTEM ERROR: {e}"
@@ -47,7 +47,8 @@ def get_kbot_score(ticker):
     try:
         stock = yf.Ticker(ticker)
         hist = stock.history(period="1mo")
-        if len(hist) < 20: return None
+        if len(hist) < 20: 
+            return None
         price = hist['Close'].iloc[-1]
         ema20 = hist['Close'].ewm(span=20).mean().iloc[-1]
         vol_avg = hist['Volume'].tail(20).mean()
@@ -57,7 +58,8 @@ def get_kbot_score(ticker):
         if curr_vol > vol_avg * 1.5: score += 30
         if price > hist['High'].iloc[-5]: score += 30
         return {"Ticker": ticker, "Price": round(price, 2), "Score": int(score)}
-    except: return None
+    except: 
+        return None
 
 # ====================== INTERFACE ======================
 st.title("🤖 Kbot: TrinityAI Master Controller")
@@ -75,6 +77,9 @@ with tabs[0]:
             st.subheader(f"Strategic Analysis: {ticker}")
             with st.spinner(f"Requesting deep briefing for {ticker}..."):
                 st.info(get_stock_description(ticker))
+            
+            # Small delay to help with yfinance rate limits
+            time.sleep(1.5)
             data = yf.Ticker(ticker).history(period="6mo")
             if not data.empty:
                 st.line_chart(data['Close'])
@@ -89,14 +94,16 @@ with tabs[1]:
         watch = {"S&P 500": "^GSPC", "Gold": "GC=F", "Silver": "SI=F", "Bitcoin": "BTC-USD"}
         cols = st.columns(4)
         for i, (name, sym) in enumerate(watch.items()):
+            time.sleep(1)  # Small delay to reduce rate limit risk
             p = yf.Ticker(sym).history(period="1d")['Close'].iloc[-1]
             cols[i].metric(name, f"${p:,.2f}")
+        
         st.divider()
         with st.spinner("TrinityAI fetching consolidated market briefing..."):
             try:
                 asset_list = ", ".join(watch.keys())
                 prompt = f"Provide a brief one-sentence strategic summary for each of these: {asset_list}."
-                response = client.models.generate_content(model="gemini-1.5-flash", contents=prompt)
+                response = client.models.generate_content(model="gemini-2.5-flash", contents=prompt)
                 st.subheader("Strategic Market Briefing")
                 st.info(response.text)
             except Exception as e:
@@ -107,7 +114,7 @@ with tabs[2]:
     st.header("Gemini AI Analysis")
     if st.button("Generate AI Market Report"):
         try:
-            response = client.models.generate_content(model="models/gemini-2.5-flash", contents="Summarize the current market outlook for Silver.")
+            response = client.models.generate_content(model="gemini-2.5-flash", contents="Summarize the current market outlook for Silver.")
             st.markdown(response.text)
         except Exception as e:
             st.error(f"TrinityAI SYSTEM ERROR: {e}")
@@ -149,7 +156,6 @@ with tabs[4]:
             ticker = row['Ticker']
             shares = row.get('Shares', 0)
             
-            # Layout with delete button
             c1, c2, c3, c4, c5 = st.columns([1, 1, 1, 1, 0.5])
             
             try:
