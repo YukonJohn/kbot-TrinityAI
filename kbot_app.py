@@ -38,7 +38,7 @@ def get_stock_description(ticker):
                   f"Provide 5-6 substantial sentences.")
         
         # Using the stable 1.5-flash model
-        response = client.models.generate_content(model="gemini-1.5-flash", contents=prompt)
+        response = client.models.generate_content(model="models/gemini-2.5-flash", contents=prompt)
         return response.text
     except Exception as e:
         return f"TrinityAI SYSTEM ERROR: {e}"
@@ -107,7 +107,7 @@ with tabs[2]:
     st.header("Gemini AI Analysis")
     if st.button("Generate AI Market Report"):
         try:
-            response = client.models.generate_content(model="gemini-1.5-flash", contents="Summarize the current market outlook for Silver.")
+            response = client.models.generate_content(model="models/gemini-2.5-flash", contents="Summarize the current market outlook for Silver.")
             st.markdown(response.text)
         except Exception as e:
             st.error(f"TrinityAI SYSTEM ERROR: {e}")
