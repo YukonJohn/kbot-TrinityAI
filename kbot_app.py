@@ -60,11 +60,55 @@ def get_kbot_score(ticker):
     except: 
         return None
 
+# --- NEW FUNCTION: ANOMALY SCANNER ---
+def run_anomaly_scanner(tickers):
+    st.subheader("📡 TrinityAI Quant Scanner (2-Sigma)")
+    st.write("Scanning for mathematical anomalies: High volume + extreme price deviation.")
+    
+    with st.spinner('Crunching market data...'):
+        results = []
+        for ticker in tickers:
+            try:
+                data = yf.Ticker(ticker).history(period="3mo")
+                if data.empty or len(data) < 20:
+                    continue
+                
+                data['SMA_20'] = data['Close'].rolling(window=20).mean()
+                data['STD_20'] = data['Close'].rolling(window=20).std()
+                data['Upper_Limit'] = data['SMA_20'] + (2 * data['STD_20'])
+                data['Lower_Limit'] = data['SMA_20'] - (2 * data['STD_20'])
+                data['Vol_SMA_20'] = data['Volume'].rolling(window=20).mean()
+                
+                today = data.iloc[-1]
+                
+                is_breaking_up = today['Close'] > today['Upper_Limit']
+                is_breaking_down = today['Close'] < today['Lower_Limit']
+                is_vol_spike = today['Volume'] > (1.5 * today['Vol_SMA_20'])
+                
+                if (is_breaking_up or is_breaking_down) and is_vol_spike:
+                    status = "🚀 Upside Breakout" if is_breaking_up else "🩸 Downside Dump"
+                    results.append({
+                        "Ticker": ticker,
+                        "Signal": status,
+                        "Price": f"${today['Close']:.2f}",
+                        "Normal Avg": f"${today['SMA_20']:.2f}",
+                        "Vol Spike": f"{(today['Volume'] / today['Vol_SMA_20']):.1f}x Normal"
+                    })
+            except Exception:
+                continue
+                
+        if results:
+            st.success(f"Anomaly Detected! Found {len(results)} out-of-bounds assets.")
+            st.dataframe(pd.DataFrame(results), use_container_width=True)
+        else:
+            st.info("Market is quiet. All scanned assets are trading within normal mathematical parameters.")
+
 # ====================== INTERFACE ======================
 st.title("🤖 Kbot: TrinityAI Master Controller")
 
+# I added the 8th tab here ("🚨 Anomaly Scanner")
 tabs = st.tabs(["📊 Analyzer", "🚀 Trends", "🌍 Global Pulse", "⛏️ Mining Scanner", 
-                "📁 My Portfolio", "🏆 Top 10", "📈 ETF Explorer"])
+                "📁 My Portfolio", "🏆 Top 10", "📈 ETF Explorer", "🚨 Anomaly Scanner"])
 
 # --- TAB 1: ANALYZER ---
 with tabs[0]:
@@ -200,7 +244,7 @@ with tabs[5]:
         ca_df = pd.DataFrame([r for r in ca_results if r]).sort_values("Score", ascending=False)
         st.table(ca_df)
 
-# --- NEW TAB 7: ETF EXPLORER ---
+# --- TAB 7: ETF EXPLORER ---
 with tabs[6]:
     st.header("📈 ETF Explorer")
     st.write("Momentum scan for popular US and Canadian ETFs")
@@ -220,3 +264,15 @@ with tabs[6]:
             st.table(etf_df)
         else:
             st.info("No valid data returned. Try again in a few minutes.")
+
+# --- NEW TAB 8: ANOMALY SCANNER ---
+with tabs[7]:
+    st.header("🚨 2-Sigma Anomaly Scanner")
+    st.write("Detects mathematical anomalies: High volume combined with extreme price deviation.")
+    
+    default_watch_list = "SPY, QQQ, TLT, GLD, SLV, AAPL, NVDA, TSLA, BTC-USD, SHOP, SU"
+    scan_input = st.text_input("Enter Tickers to Scan (comma separated):", default_watch_list)
+    
+    if st.button("Run Anomaly Scanner"):
+        watch_list = [t.strip().upper() for t in scan_input.split(",") if t.strip()]
+        run_anomaly_scanner(watch_list)
