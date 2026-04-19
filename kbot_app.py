@@ -106,9 +106,9 @@ def run_anomaly_scanner(tickers):
 # ====================== INTERFACE ======================
 st.title("🤖 Kbot: TrinityAI Master Controller")
 
-# I added the 8th tab here ("🚨 Anomaly Scanner")
+# I added the 9th tab here ("💎 Hidden Gems")
 tabs = st.tabs(["📊 Analyzer", "🚀 Trends", "🌍 Global Pulse", "⛏️ Mining Scanner", 
-                "📁 My Portfolio", "🏆 Top 10", "📈 ETF Explorer", "🚨 Anomaly Scanner"])
+                "📁 My Portfolio", "🏆 Top 10", "📈 ETF Explorer", "🚨 Anomaly Scanner", "💎 Hidden Gems"])
 
 # --- TAB 1: ANALYZER ---
 with tabs[0]:
@@ -265,7 +265,7 @@ with tabs[6]:
         else:
             st.info("No valid data returned. Try again in a few minutes.")
 
-# --- NEW TAB 8: ANOMALY SCANNER ---
+# --- TAB 8: ANOMALY SCANNER ---
 with tabs[7]:
     st.header("🚨 2-Sigma Anomaly Scanner")
     st.write("Detects mathematical anomalies: High volume combined with extreme price deviation.")
@@ -276,3 +276,38 @@ with tabs[7]:
     if st.button("Run Anomaly Scanner"):
         watch_list = [t.strip().upper() for t in scan_input.split(",") if t.strip()]
         run_anomaly_scanner(watch_list)
+
+# --- NEW TAB 9: HIDDEN GEMS ---
+with tabs[8]:
+    st.header("💎 Small-Cap 'Hidden Gem' Scanner")
+    st.write("Generates a deep-dive AI report identifying small-cap stocks ($100M - $2B) with massive growth potential, low analyst coverage, and strong fundamentals.")
+    
+    if st.button("Run Deep-Dive Small-Cap Scan"):
+        with st.spinner("TrinityAI is searching the markets for Hidden Gems. This takes a moment..."):
+            try:
+                gem_prompt = """You are a senior small-cap equity research analyst at Goldman Sachs who covers companies BEFORE they reach $10 billion in market cap — because by the time Wall Street's big analysts start covering a stock, the easy money has already been made.
+
+I need to find small-cap stocks with 10-100x potential before mainstream analysts discover them.
+
+Scan parameters:
+- Market cap filter: focus on companies between $100M and $2B.
+- Revenue growth screen: minimum 25% year-over-year revenue growth for 3+ consecutive quarters.
+- Analyst coverage check: companies with 0-5 analysts covering them.
+- Insider ownership: founders and executives owning 15%+ of shares.
+- Industry tailwinds: AI, cybersecurity, energy transition, aging demographics, automation.
+- Unit economics quality: improving gross margins and positive operating leverage.
+- Balance sheet health: enough cash to survive 18+ months.
+- Competitive position: network effects, patents, switching costs, or unique data.
+- Near-term catalysts: specific events in the next 6-12 months.
+
+Format as a Goldman Sachs-style small-cap opportunity report with 3-5 specific stock ideas, each meeting multiple criteria above. Be highly specific."""
+
+                # Send the heavy prompt to the Gemini Brain
+                response = client.models.generate_content(model="gemini-2.5-flash", contents=gem_prompt)
+                
+                # Display the formatted report
+                st.markdown(response.text)
+                st.success("Scan Complete.")
+                
+            except Exception as e:
+                st.error(f"TrinityAI SYSTEM ERROR: {e}")
