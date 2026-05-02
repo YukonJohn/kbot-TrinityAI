@@ -106,7 +106,7 @@ def run_anomaly_scanner(tickers):
 # ====================== INTERFACE ======================
 st.title("🤖 Kbot: TrinityAI Master Controller")
 
-# I added the 9th tab here ("💎 Hidden Gems")
+# Tabs Definition
 tabs = st.tabs(["📊 Analyzer", "🚀 Trends", "🌍 Global Pulse", "⛏️ Mining Scanner", 
                 "📁 My Portfolio", "🏆 Top 10", "📈 ETF Explorer", "🚨 Anomaly Scanner", "💎 Hidden Gems"])
 
@@ -277,19 +277,22 @@ with tabs[7]:
         watch_list = [t.strip().upper() for t in scan_input.split(",") if t.strip()]
         run_anomaly_scanner(watch_list)
 
-# --- NEW TAB 9: HIDDEN GEMS ---
+# --- TAB 9: HIDDEN GEMS ---
 with tabs[8]:
     st.header("💎 Small-Cap 'Hidden Gem' Scanner")
-    st.write("Generates a deep-dive AI report identifying small-cap stocks ($100M - $2B) with massive growth potential, low analyst coverage, and strong fundamentals.")
+    st.write("Generates a deep-dive AI report identifying US & Canadian small-cap stocks ($100M - $2B) with massive growth potential.")
     
     if st.button("Run Deep-Dive Small-Cap Scan"):
-        with st.spinner("TrinityAI is searching the markets for Hidden Gems. This takes a moment..."):
+        with st.spinner("TrinityAI is searching US and Canadian markets for Hidden Gems. This takes a moment..."):
             try:
-                gem_prompt = """You are a senior small-cap equity research analyst at Goldman Sachs who covers companies BEFORE they reach $10 billion in market cap — because by the time Wall Street's big analysts start covering a stock, the easy money has already been made.
+                gem_prompt = """You are a senior small-cap equity research analyst at Goldman Sachs who covers companies BEFORE they reach $10 billion in market cap.
 
 I need to find small-cap stocks with 10-100x potential before mainstream analysts discover them.
 
+CRITICAL CONSTRAINT: ONLY include companies publicly traded on United States (NYSE, NASDAQ, AMEX) or Canadian (TSX, TSXV, CSE) stock exchanges. Do NOT include international exchanges or purely OTC stocks. Provide their exact ticker symbols.
+
 Scan parameters:
+- Geography: US and Canadian exchanges ONLY.
 - Market cap filter: focus on companies between $100M and $2B.
 - Revenue growth screen: minimum 25% year-over-year revenue growth for 3+ consecutive quarters.
 - Analyst coverage check: companies with 0-5 analysts covering them.
@@ -300,7 +303,7 @@ Scan parameters:
 - Competitive position: network effects, patents, switching costs, or unique data.
 - Near-term catalysts: specific events in the next 6-12 months.
 
-Format as a Goldman Sachs-style small-cap opportunity report with 3-5 specific stock ideas, each meeting multiple criteria above. Be highly specific."""
+Format as a Goldman Sachs-style small-cap opportunity report with 3-5 specific stock ideas, each meeting multiple criteria above."""
 
                 # Send the heavy prompt to the Gemini Brain
                 response = client.models.generate_content(model="gemini-2.5-flash", contents=gem_prompt)
