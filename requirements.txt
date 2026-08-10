@@ -1,6 +1,2 @@
 streamlit
-st-gsheets-connection
-google-genai
-yfinance
-pandas
-plotly
+google-cloud-firestore
