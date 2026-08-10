@@ -1,1 +1,6 @@
 .streamlit/secrets.toml
+Github token
+api key Kbot
+firestore-key.json
+venv/
+*.pyc
