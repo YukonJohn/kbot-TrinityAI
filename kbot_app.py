@@ -5,6 +5,7 @@ import time
 import requests
 from google import genai
 from google.cloud import firestore
+from google.oauth2 import service_account
 
 # ====================== CONFIG & SECURITY ======================
 st.set_page_config(page_title="TrinityAI Master Controller", layout="wide")
@@ -78,9 +79,11 @@ MY_API_KEY = "AIzaSyA9LHDJ5INvHDYRZN0mHEzJmruvu084Qmw"
 # Initialize Gemini AI directly
 client = genai.Client(api_key=MY_API_KEY)
 
-# --- CONNECT TO FIRESTORE CLOUD VAULT ---
+# --- CONNECT TO FIRESTORE CLOUD VAULT (VIA SECRETS) ---
 try:
-    db = firestore.Client.from_service_account_json("firestore-key.json")
+    key_dict = dict(st.secrets["firestore"])
+    creds = service_account.Credentials.from_service_account_info(key_dict)
+    db = firestore.Client(credentials=creds, project=key_dict["project_id"])
     st.sidebar.success("🟢 Connected to Cloud Vault")
 except Exception as e:
     st.error(f"🔴 Database Connection Failed: {e}")
