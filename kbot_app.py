@@ -3,6 +3,7 @@ import yfinance as yf
 import pandas as pd
 import time
 import requests
+import base64
 from google import genai
 from google.cloud import firestore
 from google.oauth2 import service_account
@@ -82,6 +83,15 @@ client = genai.Client(api_key=MY_API_KEY)
 # --- CONNECT TO FIRESTORE CLOUD VAULT (VIA SECRETS) ---
 try:
     key_dict = dict(st.secrets["firestore"])
+    
+    # Clean and decode the private_key dynamically to avoid PEM parsing errors
+    raw_key = key_dict["private_key"]
+    if "-----BEGIN PRIVATE KEY-----" not in raw_key:
+        decoded_key = base64.b64decode(raw_key).decode('utf-8')
+        key_dict["private_key"] = decoded_key
+    else:
+        key_dict["private_key"] = raw_key.replace("\\n", "\n")
+
     creds = service_account.Credentials.from_service_account_info(key_dict)
     db = firestore.Client(credentials=creds, project=key_dict["project_id"])
     st.sidebar.success("🟢 Connected to Cloud Vault")
