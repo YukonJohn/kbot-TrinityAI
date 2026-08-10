@@ -103,12 +103,88 @@ def run_anomaly_scanner(tickers):
         else:
             st.info("Market is quiet. All scanned assets are trading within normal mathematical parameters.")
 
+# --- NEW FUNCTION: AMANITA SCANNER ---
+def run_amanita_scanner(tickers):
+    st.subheader("🍄 Amanita: Qullamaggie 5-Star Momentum Scanner")
+    st.write("Scanning for massive momentum, high liquidity, stacked EMAs, and volatility contraction.")
+    
+    with st.spinner('Amanita is analyzing price action and moving averages...'):
+        results = []
+        for ticker in tickers:
+            try:
+                # Pull 6 months of data
+                data = yf.Ticker(ticker).history(period="6mo")
+                if data.empty or len(data) < 50:
+                    continue
+                    
+                current_price = data['Close'].iloc[-1]
+                dollar_vol = current_price * data['Volume'].tail(20).mean()
+                
+                # Calculate Exponential Moving Averages
+                data['EMA_10'] = data['Close'].ewm(span=10).mean()
+                data['EMA_20'] = data['Close'].ewm(span=20).mean()
+                data['EMA_50'] = data['Close'].ewm(span=50).mean()
+                
+                # Calculate momentum over 1, 3, and 6 months
+                p_1mo = data['Close'].iloc[-21] if len(data) >= 21 else data['Close'].iloc[0]
+                p_3mo = data['Close'].iloc[-63] if len(data) >= 63 else data['Close'].iloc[0]
+                p_6mo = data['Close'].iloc[0]
+                
+                perf_1mo = ((current_price - p_1mo) / p_1mo) * 100
+                perf_3mo = ((current_price - p_3mo) / p_3mo) * 100
+                perf_6mo = ((current_price - p_6mo) / p_6mo) * 100
+                max_perf = max(perf_1mo, perf_3mo, perf_6mo)
+                
+                # Calculate ADR (Average Daily Range) over 20 days
+                data['Daily_Range_Pct'] = ((data['High'] - data['Low']) / data['Close']) * 100
+                adr_20 = data['Daily_Range_Pct'].tail(20).mean()
+                
+                # Core Qullamaggie Rules
+                has_momentum = max_perf >= 30.0
+                is_liquid = dollar_vol >= 5_000_000
+                is_volatile = adr_20 >= 4.0
+                
+                ema_10 = data['EMA_10'].iloc[-1]
+                ema_20 = data['EMA_20'].iloc[-1]
+                ema_50 = data['EMA_50'].iloc[-1]
+                
+                trend_stacked = (ema_10 > ema_20) and (ema_20 > ema_50) and (current_price > ema_10)
+                
+                # Surfing: Is the price consolidating tight near the 10 or 20 EMA?
+                surfing_10 = abs((current_price - ema_10) / ema_10) < 0.04
+                surfing_20 = abs((current_price - ema_20) / ema_20) < 0.04
+                is_surfing = surfing_10 or surfing_20
+                
+                score = sum([has_momentum, is_liquid, is_volatile, trend_stacked, is_surfing])
+                
+                # Only show stocks that pass at least 3 of the 5 rules
+                if score >= 3:
+                    results.append({
+                        "Ticker": ticker,
+                        "Score": f"{score}/5",
+                        "Momentum": f"+{max_perf:.1f}%",
+                        "ADR (Vol)": f"{adr_20:.1f}%",
+                        "EMAs Stacked": "✅" if trend_stacked else "❌",
+                        "Surfing": "✅" if is_surfing else "❌",
+                        "Signal": "⭐ 5-STAR SETUP" if score == 5 else "On Watch"
+                    })
+            except Exception:
+                continue
+                
+        if results:
+            df = pd.DataFrame(results).sort_values(by=["Score", "Momentum"], ascending=[False, False])
+            st.dataframe(df, use_container_width=True)
+            if any(r["Score"] == "5/5" for r in results):
+                st.success("🚨 Amanita found a perfect 5-Star Setup!")
+        else:
+            st.info("Market is quiet. No stocks passed the strict Amanita criteria today.")
+
 # ====================== INTERFACE ======================
 st.title("🤖 Kbot: TrinityAI Master Controller")
 
 # Tabs Definition
 tabs = st.tabs(["📊 Analyzer", "🚀 Trends", "🌍 Global Pulse", "⛏️ Mining Scanner", 
-                "📁 My Portfolio", "🏆 Top 10", "📈 ETF Explorer", "🚨 Anomaly Scanner", "💎 Hidden Gems"])
+                "📁 My Portfolio", "🏆 Top 10", "📈 ETF Explorer", "🚨 Anomaly Scanner", "💎 Hidden Gems", "🍄 Amanita"])
 
 # --- TAB 1: ANALYZER ---
 with tabs[0]:
@@ -314,3 +390,15 @@ Format as a Goldman Sachs-style small-cap opportunity report with 3-5 specific s
                 
             except Exception as e:
                 st.error(f"TrinityAI SYSTEM ERROR: {e}")
+
+# --- TAB 10: AMANITA SCANNER ---
+with tabs[9]:
+    st.header("🍄 Amanita: 5-Star Quant Scanner")
+    st.write("Identifies high-momentum breakout setups using institutional swing trading logic.")
+    
+    default_amanita_list = "HOOD, COIN, PLTR, NVDA, TSLA, SMCI, UBER, CRWD, SHOP, SU"
+    amanita_input = st.text_input("Enter Tickers to Scan for 5-Star Setups:", default_amanita_list)
+    
+    if st.button("Run Amanita Scanner"):
+        amanita_watch_list = [t.strip().upper() for t in amanita_input.split(",") if t.strip()]
+        run_amanita_scanner(amanita_watch_list)
